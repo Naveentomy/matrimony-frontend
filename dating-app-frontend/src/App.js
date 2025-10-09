@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, Mail, Phone, Eye, EyeOff, Lock, Check, X, AlertCircle } from 'lucide-react';
+import axios from 'axios';
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,8 @@ const SignUpPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
 
+  const [message, setMessage] = useState("");
+  
   const getPasswordStrength = (password) => {
     if (!password) return { strength: 0, label: '', color: '' };
     
@@ -136,6 +139,7 @@ const SignUpPage = () => {
 
     setIsLoading(true);
     setTimeout(() => {
+      sendOTPtoPhone();
       setIsLoading(false);
       setShowOTPModal(true);
     }, 1500);
@@ -166,6 +170,23 @@ const SignUpPage = () => {
     setOtpError('');
     alert('New OTP has been sent!');
   };
+
+  const sendOTPtoPhone = async () => {
+    // e.preventDefault();
+    setMessage("");
+    const mobileNumber = formData.contact;
+    try {
+      const res = await axios.post("http://localhost:3001/send-otp", { mobileNumber: mobileNumber });
+      console.log(res.data);
+      if (res.data.success) {
+        setMessage("OTP sent successfully!");
+      } else {
+        setMessage("Failed to send OTP.");
+      }
+    } catch (err) {
+      setMessage("Failed to send OTP.");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-red-100 flex items-center justify-center p-4">
