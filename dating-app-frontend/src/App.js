@@ -17,6 +17,7 @@ const SignUpPage = () => {
   const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpValue, setOtpValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
 
@@ -99,12 +100,14 @@ const SignUpPage = () => {
     const newErrors = {};
 
     if (formData.contactType === 'email') {
+      sendingOTP();
       if (!formData.contact) {
         newErrors.contact = 'Email is required';
       } else if (!validateEmail(formData.contact)) {
         newErrors.contact = 'Please enter a valid email address';
       }
     } else {
+      sendingOTP();
       if (!formData.contact) {
         newErrors.contact = 'Phone number is required';
       } else if (!validatePhone(formData.contact)) {
@@ -139,24 +142,24 @@ const SignUpPage = () => {
 
     setIsLoading(true);
     setTimeout(() => {
-      sendOTPtoPhone();
       setIsLoading(false);
       setShowOTPModal(true);
     }, 1500);
   };
 
   const handleVerifyOtp = () => {
-    const otpValue = otp.join('');
-    
-    if (otpValue.length !== 6) {
+    const enteredOTP = otp.join('')
+
+    if (enteredOTP.length !== 6) {
       setOtpError('Please enter complete OTP');
       return;
     }
 
+    console.log('Verifying OTP:', enteredOTP, 'Expected OTP:', otpValue);
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      if (otpValue === '123456') {
+      if (otpValue === enteredOTP) {
         alert('Account created successfully! Redirecting to profile setup...');
         setShowOTPModal(false);
       } else {
@@ -171,19 +174,28 @@ const SignUpPage = () => {
     alert('New OTP has been sent!');
   };
 
-  const sendOTPtoPhone = async () => {
+  const sendingOTP = async () => {
     // e.preventDefault();
     setMessage("");
-    const mobileNumber = formData.contact;
+    const { contact, contactType } = formData;
+
     try {
-      const res = await axios.post("http://localhost:3001/send-otp", { mobileNumber: mobileNumber });
+      const payload =
+      contactType === "email"
+        ? { email: contact }
+        : { mobileNumber: contact };
+
+      const res = await axios.post("http://localhost:3001/send-otp", {
+        ...payload,
+        contactType,
+      });
+
+      setMessage(res.data.success ? "OTP sent successfully!" : "Failed to send OTP.");
       console.log(res.data);
-      if (res.data.success) {
-        setMessage("OTP sent successfully!");
-      } else {
-        setMessage("Failed to send OTP.");
-      }
+
+      setOtpValue(String(res.data.otp));
     } catch (err) {
+      console.error(err);
       setMessage("Failed to send OTP.");
     }
   }
@@ -245,7 +257,7 @@ const SignUpPage = () => {
                   name="contact"
                   value={formData.contact}
                   onChange={handleInputChange}
-                  placeholder={formData.contactType === 'email' ? 'you@example.com' : '+1 234 567 8900'}
+                  placeholder={formData.contactType === 'email' ? 'you@example.com' : '9961 567 900'}
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
                     errors.contact ? 'border-red-500' : 'border-gray-300'
                   }`}
